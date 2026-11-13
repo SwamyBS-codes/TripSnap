@@ -1,0 +1,21 @@
+@import "tailwindcss";
+@theme {
+  --color-moss: #385b43;
+  --color-ink: #17231f;
+  --color-orange: #e78a52;
+  --color-cream: #f7f5ef;
+}
+:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;background:#f7f5ef;color:#17231f;font-family:Arial,Helvetica,sans-serif}button{cursor:pointer}
+html{scroll-behavior:smooth}
+@keyframes lightbox-in{from{opacity:0}to{opacity:1}}
+@keyframes lightbox-zoom{from{opacity:0;transform:scale(.965)}to{opacity:1;transform:scale(1)}}
+.lightbox-backdrop{animation:lightbox-in .18s ease-out}
+.lightbox-image{animation:lightbox-zoom .22s ease-out}
+.page-bg{
+  background:
+    radial-gradient(1100px 520px at 8% -8%, rgba(200, 226, 196, .55) 0%, transparent 60%),
+    radial-gradient(900px 480px at 100% 0%, rgba(250, 226, 170, .45) 0%, transparent 55%),
+    radial-gradient(900px 600px at 50% 110%, rgba(214, 232, 222, .45) 0%, transparent 65%),
+    #f7f5ef;
+}
+::selection{background:#d9f99d;color:#17231f}

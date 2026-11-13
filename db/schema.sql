@@ -1,0 +1,18 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS citext;
+CREATE TYPE trip_role AS ENUM ('owner','member');
+CREATE TYPE media_status AS ENUM ('PENDING','PROCESSING','READY','FAILED');
+CREATE TABLE users (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), email citext UNIQUE NOT NULL, name text NOT NULL, password_hash text NOT NULL, is_admin boolean NOT NULL DEFAULT false, email_verified_at timestamptz, created_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE trips (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), title text NOT NULL, location text NOT NULL, start_date date NOT NULL, end_date date NOT NULL, description text NOT NULL DEFAULT '', cover_key text, owner_id uuid NOT NULL REFERENCES users(id), created_at timestamptz NOT NULL DEFAULT now(), CHECK (end_date >= start_date));
+CREATE TABLE trip_members (trip_id uuid REFERENCES trips(id) ON DELETE CASCADE, user_id uuid REFERENCES users(id) ON DELETE CASCADE, role trip_role NOT NULL DEFAULT 'member', joined_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(trip_id,user_id));
+CREATE TABLE invitations (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), trip_id uuid NOT NULL REFERENCES trips(id) ON DELETE CASCADE, email citext, role trip_role NOT NULL DEFAULT 'member' CHECK(role='member'), token_hash text UNIQUE NOT NULL, expires_at timestamptz NOT NULL, accepted_at timestamptz, created_by uuid NOT NULL REFERENCES users(id), created_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE media (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), trip_id uuid NOT NULL REFERENCES trips(id) ON DELETE CASCADE, uploader_id uuid NOT NULL REFERENCES users(id), filename text NOT NULL, mime_type text NOT NULL, size_bytes bigint NOT NULL CHECK(size_bytes > 0 AND size_bytes <= 2147483648), s3_key text UNIQUE NOT NULL, processed_key text, poster_key text, status media_status NOT NULL DEFAULT 'PENDING', caption text NOT NULL DEFAULT '', location text, taken_at timestamptz, exif jsonb, failure_code text, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE comments (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), media_id uuid NOT NULL REFERENCES media(id) ON DELETE CASCADE, user_id uuid NOT NULL REFERENCES users(id), body text NOT NULL CHECK(length(body) BETWEEN 1 AND 2000), created_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE likes (media_id uuid REFERENCES media(id) ON DELETE CASCADE, user_id uuid REFERENCES users(id) ON DELETE CASCADE, created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(media_id,user_id));
+CREATE INDEX trip_members_user_idx ON trip_members(user_id,trip_id);
+CREATE INDEX trips_owner_idx ON trips(owner_id,created_at DESC);
+CREATE INDEX invitations_email_idx ON invitations(email,expires_at);
+CREATE INDEX media_trip_taken_idx ON media(trip_id,taken_at DESC NULLS LAST,id);
+CREATE INDEX media_trip_uploader_idx ON media(trip_id,uploader_id,created_at DESC);
+CREATE INDEX media_status_created_idx ON media(status,created_at);
+CREATE INDEX comments_media_time_idx ON comments(media_id,created_at);
